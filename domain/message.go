@@ -13,8 +13,7 @@ type Message struct {
 	Body     string `json:"body" bson:"body"`
 	UpdateAt int64  `json:"update_at" bson:"update_at"`
 	// previous versions of the message (message structure object)
-	Modifications []*Message `json:"modifications,omitempty" bson:"modifications"`
-	Viewed        bool       `json:"viewed" bson:"viewed"`
+	Viewed bool `json:"viewed" bson:"viewed"`
 	//
 	Reaction string `json:"reaction,omitempty" bson:"reaction"`
 }
