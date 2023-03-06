@@ -17,5 +17,3 @@ tmp/
 
 docker-compose.yaml
 docker.dev.env
-
-.gitlab-ci-lo*
