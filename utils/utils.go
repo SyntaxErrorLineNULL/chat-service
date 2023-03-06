@@ -14,3 +14,13 @@ func Merge[T any](first, second []T) []T {
 	// Return the new slice
 	return list
 }
+
+// Contains checks if slice contains element.
+func Contains[T comparable](elements []T, element T) bool {
+	for _, item := range elements {
+		if item == element {
+			return true
+		}
+	}
+	return false
+}
