@@ -1,0 +1,91 @@
+version: '3'
+
+services:
+  configsvr1:
+    image: mongo:latest
+    command: mongod --configsvr --replSet configrs --port 27019
+    volumes:
+      - configdb:/data/configdb
+    ports:
+      - "27019:27019"
+    networks:
+      mongo:
+
+  configsvr2:
+    image: mongo:latest
+    command: mongod --configsvr --replSet configrs --port 27020
+    volumes:
+      - configdb:/data/configdb
+    ports:
+      - "27020:27020"
+    networks:
+      mongo:
+
+  configsvr3:
+    image: mongo:latest
+    command: mongod --configsvr --replSet configrs --port 27021
+    volumes:
+      - configdb:/data/configdb
+    ports:
+      - "27021:27021"
+    networks:
+      mongo:
+
+  shard1a:
+    image: mongo:latest
+    command: mongod --shardsvr --replSet shard1 --port 27018
+    volumes:
+      - shard1a:/data/db
+    ports:
+      - "27018:27018"
+    networks:
+      mongo:
+
+  shard1b:
+    image: mongo:latest
+    command: mongod --shardsvr --replSet shard1 --port 27017
+    volumes:
+      - shard1b:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      mongo:
+
+  shard2a:
+    image: mongo:latest
+    command: mongod --shardsvr --replSet shard2 --port 27016
+    volumes:
+      - shard2a:/data/db
+    ports:
+      - "27016:27016"
+    networks:
+      mongo:
+
+  shard2b:
+    image: mongo:latest
+    command: mongod --shardsvr --replSet shard2 --port 27015
+    volumes:
+      - shard2b:/data/db
+    ports:
+      - "27015:27015"
+    networks:
+      mongo:
+
+  mongos:
+    image: mongo:latest
+    command: mongos --configdb configrs/configsvr1:27019,configsvr2:27020,configsvr3:27021 --bind_ip_all --port 27022
+    ports:
+      - "27022:27022"
+    networks:
+      mongo:
+
+volumes:
+  configdb:
+  shard1a:
+  shard1b:
+  shard2a:
+  shard2b:
+
+networks:
+  mongo:
+    driver: bridge
