@@ -14,7 +14,7 @@ type Message struct {
 	UpdateAt int64  `json:"update_at" bson:"update_at"`
 	// previous versions of the message (message structure object)
 	Viewed bool `json:"viewed" bson:"viewed"`
-	//
+	// the field that is required to display the user's reaction to the message
 	Reaction string `json:"reaction,omitempty" bson:"reaction"`
 }
 
