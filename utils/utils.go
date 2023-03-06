@@ -24,3 +24,13 @@ func Contains[T comparable](elements []T, element T) bool {
 	}
 	return false
 }
+
+// Exclude removes element from slice
+func Exclude[T comparable](elements []T, element T) []T {
+	for i, item := range elements {
+		if item == element {
+			elements = append(elements[:i], elements[i+1:]...)
+		}
+	}
+	return elements
+}
