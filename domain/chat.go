@@ -13,6 +13,7 @@ type Chat struct {
 	PinnedMessagesIDs []string `json:"pinned_messages,omitempty" bson:"pinned_messages"`
 	Label             string   `json:"label,omitempty" bson:"label"`
 	PinnedMessageID   string   `json:"pinned_message_id,omitempty" bson:"pinned_message_id"`
+	LastMessage       *Message `json:"last_message,omitempty" bson:"last_message"`
 }
 
 // Description of the chat type.
