@@ -92,3 +92,57 @@ func TestContainsInt(t *testing.T) {
 		})
 	}
 }
+
+func TestExcludeString(t *testing.T) {
+	tests := []struct {
+		name     string
+		elements []string
+		element  string
+		want     []string
+	}{
+		{
+			name:     "exclude",
+			elements: []string{"a", "b", "c"},
+			element:  "b",
+			want:     []string{"a", "c"},
+		},
+		{
+			name:     "not exclude",
+			elements: []string{"a", "b", "c"},
+			element:  "d",
+			want:     []string{"a", "b", "c"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, Exclude(tt.elements, tt.element), tt.name)
+		})
+	}
+}
+
+func TestExcludeInt(t *testing.T) {
+	tests := []struct {
+		name     string
+		elements []int
+		element  int
+		want     []int
+	}{
+		{
+			name:     "exclude",
+			elements: []int{1, 2, 3},
+			element:  2,
+			want:     []int{1, 3},
+		},
+		{
+			name:     "not exclude",
+			elements: []int{1, 2, 3},
+			element:  4,
+			want:     []int{1, 2, 3},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, Exclude(tt.elements, tt.element), tt.name)
+		})
+	}
+}
