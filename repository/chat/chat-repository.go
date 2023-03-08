@@ -9,4 +9,5 @@ type IChatRepository interface {
 	Create(ctx context.Context, ch *domain.Chat) error
 	Find(ctx context.Context, ch *domain.Chat) (*domain.Chat, error)
 	FindOwnedChats(ctx context.Context, ownerID string) ([]*domain.Chat, error)
+	FindPersonalChatBetweenUsers(ctx context.Context, ownerID, participantID string) (*domain.Chat, error)
 }
