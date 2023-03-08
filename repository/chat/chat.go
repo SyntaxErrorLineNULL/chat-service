@@ -111,3 +111,32 @@ func (r *DefaultChatRepository) Find(ctx context.Context, ch *domain.Chat) (*dom
 
 	return chat, nil
 }
+
+// FindOwnedChats returns all chats where the user is the owner
+func (r *DefaultChatRepository) FindOwnedChats(ctx context.Context, ownerID string) ([]*domain.Chat, error) {
+	l := r.logger.Sugar().With("FindActiveChatsByOwner")
+	start := time.Now()
+	if ownerID == "" {
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "empty owner id")
+		return nil, ErrEmpty
+	}
+
+	cursor, err := r.col.Find(ctx, bson.M{"owner_id": ownerID}, nil)
+	if err != nil {
+		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "failed find chat with owner id")
+		return nil, err
+	}
+
+	var ch []*domain.Chat
+	if err = cursor.All(ctx, &ch); err != nil {
+		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "failed find all documents")
+		return nil, err
+	}
+
+	if err = cursor.Close(ctx); err != nil {
+		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "failed close cursor")
+		return nil, err
+	}
+
+	return ch, nil
+}
