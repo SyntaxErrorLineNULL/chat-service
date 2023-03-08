@@ -140,3 +140,31 @@ func (r *DefaultChatRepository) FindOwnedChats(ctx context.Context, ownerID stri
 
 	return ch, nil
 }
+
+// FindPersonalChatBetweenUsers chat document
+func (r *DefaultChatRepository) FindPersonalChatBetweenUsers(ctx context.Context, ownerID, participantID string) (*domain.Chat, error) {
+	l := r.logger.Sugar().With("FindPersonalChatBetweenUsers")
+	start := time.Now()
+	if ownerID == "" || participantID == "" {
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "empty owner and participant id")
+		return nil, ErrEmpty
+	}
+
+	chat := &domain.Chat{}
+	filter := bson.D{
+		{Key: "owner_id", Value: ownerID},
+		{Key: "participants", Value: participantID},
+		{Key: "type", Value: domain.ChatTypePersonal},
+	}
+	err := r.col.FindOne(ctx, filter).Decode(chat)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			l.Error(zap.Error(ErrNotFound), zap.Duration("duration", time.Since(start)), "not found in database")
+			return nil, ErrNotFound
+		}
+		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "find chat error")
+		return nil, err
+	}
+
+	return chat, nil
+}
