@@ -2,8 +2,10 @@ package chat
 
 import (
 	"context"
+	"errors"
 	"github.com/SyntaxErrorLineNULL/chat-service/domain"
 	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 	"time"
@@ -62,4 +64,50 @@ func (r *DefaultChatRepository) Create(ctx context.Context, ch *domain.Chat) err
 	}
 
 	return nil
+}
+
+// Find for chat by id or by id and participant or by id and chat owner.
+func (r *DefaultChatRepository) Find(ctx context.Context, ch *domain.Chat) (*domain.Chat, error) {
+	l := r.logger.Sugar().With("Create")
+	start := time.Now()
+	if ch == nil {
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "chat is nil")
+		return nil, ErrEmpty
+	}
+
+	chat := &domain.Chat{}
+
+	filled := false
+	match := bson.A{}
+	if len(ch.Participants) != 0 {
+		filled = true
+		// Array must contain all passed values. Operator $all solves this problem.
+		// https://www.mongodb.com/docs/manual/reference/operator/query/all/#mongodb-query-op.-all
+		match = append(match, bson.M{"participants": bson.M{"$all": ch.Participants}})
+	}
+	if ch.OwnerID != "" {
+		filled = true
+		match = append(match, bson.M{"owner_id": ch.OwnerID})
+	}
+	if ch.ID != "" {
+		filled = true
+		match = append(match, bson.M{"id": ch.ID})
+	}
+
+	if !filled {
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "incorrect data to find chat")
+		return nil, ErrCannotFind
+	}
+
+	err := r.col.FindOne(ctx, bson.M{"$and": match}).Decode(chat)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "chat not found in database")
+			return nil, ErrNotFound
+		}
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "find error")
+		return nil, err
+	}
+
+	return chat, nil
 }
