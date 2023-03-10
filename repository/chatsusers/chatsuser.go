@@ -1,8 +1,12 @@
 package chatsusers
 
 import (
+	"context"
+	"github.com/SyntaxErrorLineNULL/chat-service/domain"
+	"github.com/SyntaxErrorLineNULL/chat-service/service/chat"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
+	"time"
 )
 
 type DefaultChatsUsersRepository struct {
@@ -17,4 +21,22 @@ func NewDefaultChatsUsersRepository(client *mongo.Client, logger *zap.Logger) *D
 		col:    client.Database("chat-service").Collection("chats_users"),
 		logger: logger,
 	}
+}
+
+// Create a structure to store the chat user
+func (r *DefaultChatsUsersRepository) Create(ctx context.Context, chu *domain.ChatsUsers) error {
+	l := r.logger.Sugar().With("Create")
+	start := time.Now()
+	if chu.ID == "" {
+		l.Error(zap.Error(chat.ErrEmpty), zap.Duration("duration", time.Since(start)), "chats users id is nil")
+		return chat.ErrEmpty
+	}
+
+	_, err := r.col.InsertOne(ctx, chu)
+	if err != nil {
+		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "insert error")
+		return err
+	}
+
+	return nil
 }
