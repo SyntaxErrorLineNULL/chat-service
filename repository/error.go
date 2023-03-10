@@ -10,3 +10,6 @@ var ErrNotFound = errors.New("not found")
 
 // ErrCannotFind returns when request was with incorrect data to search user
 var ErrCannotFind = errors.New("cannot find")
+
+// ErrInternal returns when something went wrong in repository
+var ErrInternal = errors.New("internal error")
