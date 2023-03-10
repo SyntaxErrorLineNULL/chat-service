@@ -7,6 +7,7 @@ import (
 	"github.com/SyntaxErrorLineNULL/chat-service/repository"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"time"
 )
@@ -65,4 +66,35 @@ func (r *DefaultChatsUsersRepository) Find(ctx context.Context, chatID, uid stri
 	}
 
 	return ch, nil
+}
+
+// Update change record
+func (r *DefaultChatsUsersRepository) Update(ctx context.Context, chu *domain.ChatsUsers) error {
+	l := r.logger.Sugar().With("Update")
+	start := time.Now()
+	if chu.ID == "" {
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
+		return repository.ErrEmpty
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"start_message_id": chu.StartMessageID,
+			"end_message_id":   chu.EndMessageID,
+			"max_read_date":    chu.MaxReadDate,
+		},
+	}
+
+	_, err := r.col.UpdateOne(ctx, bson.M{"chat_id": chu.ChatID}, update, options.Update().SetUpsert(true))
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "record not found in database")
+			return repository.ErrNotFound
+		}
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "update error")
+
+		return repository.ErrInternal
+	}
+
+	return nil
 }
