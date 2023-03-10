@@ -3,13 +3,14 @@ package chatsusers
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/SyntaxErrorLineNULL/chat-service/domain"
 	"github.com/SyntaxErrorLineNULL/chat-service/repository"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
-	"time"
 )
 
 type DefaultChatsUsersRepository struct {
@@ -58,7 +59,7 @@ func (r *DefaultChatsUsersRepository) Find(ctx context.Context, chatID, uid stri
 	err := r.col.FindOne(ctx, filter).Decode(ch)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "not found in database")
+			l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "chats users record not found in database")
 			return nil, repository.ErrNotFound
 		}
 		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "find error")
@@ -88,11 +89,33 @@ func (r *DefaultChatsUsersRepository) Update(ctx context.Context, chu *domain.Ch
 	_, err := r.col.UpdateOne(ctx, bson.M{"chat_id": chu.ChatID}, update, options.Update().SetUpsert(true))
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "record not found in database")
+			l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "chats users record not found in database")
 			return repository.ErrNotFound
 		}
 		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "update error")
+		return repository.ErrInternal
+	}
 
+	return nil
+}
+
+// Delete deleting a chat participant's record.
+func (r *DefaultChatsUsersRepository) Delete(ctx context.Context, chatID, uid string) error {
+	l := r.logger.Sugar().With("Update")
+	start := time.Now()
+	if chatID == "" || uid == "" {
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
+		return repository.ErrEmpty
+	}
+
+	filter := bson.D{{Key: "chat_id", Value: chatID}, {Key: "user_id", Value: uid}}
+	_, err := r.col.DeleteOne(ctx, filter)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "chat user record not found in database")
+			return repository.ErrNotFound
+		}
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "error delete chat user")
 		return repository.ErrInternal
 	}
 
