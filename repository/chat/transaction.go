@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"github.com/SyntaxErrorLineNULL/chat-service/domain"
+	"github.com/SyntaxErrorLineNULL/chat-service/repository"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
@@ -15,19 +16,19 @@ func (r *DefaultChatRepository) withTransactionChatCreate(ctx context.Context, c
 	l := r.logger.Sugar().With("withTransactionChatCreate")
 	start := time.Now()
 	if ch == nil {
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "chat is nil")
-		return ErrEmpty
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "chat is nil")
+		return repository.ErrEmpty
 	}
 
 	if ch == nil {
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "empty chat document")
-		return ErrEmpty
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty chat document")
+		return repository.ErrEmpty
 	}
 
 	if len(chatsUsers) == 0 {
 		// The check is needed in case somehow it turned out that there were no participants, or the documents were not drawn up
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "empty documents for the transaction")
-		return ErrEmpty
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty documents for the transaction")
+		return repository.ErrEmpty
 	}
 
 	opts := options.Session().SetDefaultReadConcern(readconcern.Local())

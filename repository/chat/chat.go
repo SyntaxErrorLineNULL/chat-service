@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/SyntaxErrorLineNULL/chat-service/domain"
+	"github.com/SyntaxErrorLineNULL/chat-service/repository"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -31,12 +32,12 @@ func NewDefaultChatRepository(client *mongo.Client, logger *zap.Logger) *Default
 func (r *DefaultChatRepository) Create(ctx context.Context, ch *domain.Chat) error {
 	l := r.logger.Sugar().With("Create")
 	if ch == nil {
-		return ErrEmpty
+		return repository.ErrEmpty
 	}
 	start := time.Now()
 	if ch == nil {
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "chat is nil")
-		return ErrEmpty
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "chat is nil")
+		return repository.ErrEmpty
 	}
 
 	t := time.Now().UnixMilli()
@@ -59,7 +60,7 @@ func (r *DefaultChatRepository) Create(ctx context.Context, ch *domain.Chat) err
 
 	// Start transaction
 	if err := r.withTransactionChatCreate(ctx, ch, participants); err != nil {
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "failed insert chat with transaction")
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "failed insert chat with transaction")
 		return err
 	}
 
@@ -71,8 +72,8 @@ func (r *DefaultChatRepository) Find(ctx context.Context, ch *domain.Chat) (*dom
 	l := r.logger.Sugar().With("Create")
 	start := time.Now()
 	if ch == nil {
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "chat is nil")
-		return nil, ErrEmpty
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "chat is nil")
+		return nil, repository.ErrEmpty
 	}
 
 	chat := &domain.Chat{}
@@ -95,17 +96,17 @@ func (r *DefaultChatRepository) Find(ctx context.Context, ch *domain.Chat) (*dom
 	}
 
 	if !filled {
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "incorrect data to find chat")
-		return nil, ErrCannotFind
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "incorrect data to find chat")
+		return nil, repository.ErrCannotFind
 	}
 
 	err := r.col.FindOne(ctx, bson.M{"$and": match}).Decode(chat)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "chat not found in database")
-			return nil, ErrNotFound
+			l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "chat not found in database")
+			return nil, repository.ErrNotFound
 		}
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "find error")
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "find error")
 		return nil, err
 	}
 
@@ -117,8 +118,8 @@ func (r *DefaultChatRepository) FindOwnedChats(ctx context.Context, ownerID stri
 	l := r.logger.Sugar().With("FindActiveChatsByOwner")
 	start := time.Now()
 	if ownerID == "" {
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "empty owner id")
-		return nil, ErrEmpty
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty owner id")
+		return nil, repository.ErrEmpty
 	}
 
 	cursor, err := r.col.Find(ctx, bson.M{"owner_id": ownerID}, nil)
@@ -146,8 +147,8 @@ func (r *DefaultChatRepository) FindPersonalChatBetweenUsers(ctx context.Context
 	l := r.logger.Sugar().With("FindPersonalChatBetweenUsers")
 	start := time.Now()
 	if ownerID == "" || participantID == "" {
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "empty owner and participant id")
-		return nil, ErrEmpty
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty owner and participant id")
+		return nil, repository.ErrEmpty
 	}
 
 	chat := &domain.Chat{}
@@ -159,8 +160,8 @@ func (r *DefaultChatRepository) FindPersonalChatBetweenUsers(ctx context.Context
 	err := r.col.FindOne(ctx, filter).Decode(chat)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			l.Error(zap.Error(ErrNotFound), zap.Duration("duration", time.Since(start)), "not found in database")
-			return nil, ErrNotFound
+			l.Error(zap.Error(repository.ErrNotFound), zap.Duration("duration", time.Since(start)), "not found in database")
+			return nil, repository.ErrNotFound
 		}
 		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "find chat error")
 		return nil, err
