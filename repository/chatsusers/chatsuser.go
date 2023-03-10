@@ -2,8 +2,10 @@ package chatsusers
 
 import (
 	"context"
+	"errors"
 	"github.com/SyntaxErrorLineNULL/chat-service/domain"
-	"github.com/SyntaxErrorLineNULL/chat-service/service/chat"
+	"github.com/SyntaxErrorLineNULL/chat-service/repository"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 	"time"
@@ -28,8 +30,8 @@ func (r *DefaultChatsUsersRepository) Create(ctx context.Context, chu *domain.Ch
 	l := r.logger.Sugar().With("Create")
 	start := time.Now()
 	if chu.ID == "" {
-		l.Error(zap.Error(chat.ErrEmpty), zap.Duration("duration", time.Since(start)), "chats users id is nil")
-		return chat.ErrEmpty
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
+		return repository.ErrEmpty
 	}
 
 	_, err := r.col.InsertOne(ctx, chu)
@@ -39,4 +41,28 @@ func (r *DefaultChatsUsersRepository) Create(ctx context.Context, chu *domain.Ch
 	}
 
 	return nil
+}
+
+// Find chats users by chat ID and user ID value
+func (r *DefaultChatsUsersRepository) Find(ctx context.Context, chatID, uid string) (*domain.ChatsUsers, error) {
+	l := r.logger.Sugar().With("Find")
+	start := time.Now()
+	if chatID == "" {
+		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
+		return nil, repository.ErrEmpty
+	}
+
+	ch := &domain.ChatsUsers{}
+	filter := bson.D{{Key: "chat_id", Value: chatID}, {Key: "user_id", Value: uid}}
+	err := r.col.FindOne(ctx, filter).Decode(ch)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "not found in database")
+			return nil, repository.ErrNotFound
+		}
+		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "find error")
+		return nil, err
+	}
+
+	return ch, nil
 }
