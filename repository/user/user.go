@@ -52,7 +52,8 @@ func (r *DefaultUserRepository) Create(ctx context.Context, usr *domain.User) er
 
 	// generate user id
 	usr.ID = uuid.New().String()
-	_, err := r.col.InsertOne(ctx, usr)
+	u := &mapper.UserMapper{}
+	_, err := r.col.InsertOne(ctx, u.ToDTO(usr))
 	if err != nil {
 		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "insert error")
 		return ErrInternal
@@ -63,7 +64,7 @@ func (r *DefaultUserRepository) Create(ctx context.Context, usr *domain.User) er
 }
 
 func (r *DefaultUserRepository) Find(ctx context.Context, usr *domain.User) (*domain.User, error) {
-	l := r.logger.Sugar().With("Create")
+	l := r.logger.Sugar().With("Find")
 	start := time.Now()
 	if usr == nil {
 		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "user is nil")
@@ -105,6 +106,34 @@ func (r *DefaultUserRepository) Find(ctx context.Context, usr *domain.User) (*do
 		return nil, ErrInternal
 	}
 
+	l.Info(zap.Duration("duration", time.Since(start)), "successful find user")
 	userMapper := mapper.UserMapper{}
 	return userMapper.ToModel(u), nil
+}
+
+func (r *DefaultUserRepository) Update(ctx context.Context, usr *domain.User) error {
+	return nil
+}
+
+// Exist returns activity boolean of userid record from database
+func (r *DefaultUserRepository) Exist(ctx context.Context, id string) (bool, error) {
+	l := r.logger.Sugar().With("Exist")
+	start := time.Now()
+	if id == "" {
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "user id is empty")
+		return false, ErrInvalidArgument
+	}
+
+	err := r.col.FindOne(ctx, bson.M{"id": id}).Err()
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			l.Info(zap.Duration("duration", time.Since(start)), "user not found")
+			return false, nil
+		}
+		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "check user exist error")
+		return false, ErrInternal
+	}
+
+	l.Info(zap.Duration("duration", time.Since(start)), "successful check user exist")
+	return true, nil
 }
