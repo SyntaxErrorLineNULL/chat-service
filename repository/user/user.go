@@ -137,3 +137,26 @@ func (r *DefaultUserRepository) Exist(ctx context.Context, id string) (bool, err
 	l.Info(zap.Duration("duration", time.Since(start)), "successful check user exist")
 	return true, nil
 }
+
+// ExistUserName returns boolean check the existence of the record in the database
+func (r *DefaultUserRepository) ExistUserName(ctx context.Context, username string) (bool, error) {
+	l := r.logger.Sugar().With("Exist")
+	start := time.Now()
+	if username == "" {
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "username is empty")
+		return false, ErrInvalidArgument
+	}
+
+	err := r.col.FindOne(ctx, bson.M{"username": username}).Err()
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			l.Info(zap.Duration("duration", time.Since(start)), "username not exist")
+			return false, nil
+		}
+		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "check username exist error")
+		return false, ErrInternal
+	}
+
+	l.Info(zap.Duration("duration", time.Since(start)), "successful check username exist")
+	return true, nil
+}
