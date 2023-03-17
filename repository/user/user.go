@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"github.com/SyntaxErrorLineNULL/chat-service/domain"
+	"github.com/SyntaxErrorLineNULL/chat-service/repository/dto"
+	"github.com/SyntaxErrorLineNULL/chat-service/repository/mapper"
 	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 	"time"
@@ -57,4 +60,51 @@ func (r *DefaultUserRepository) Create(ctx context.Context, usr *domain.User) er
 
 	l.Info(zap.Duration("duration", time.Since(start)), "successful user created")
 	return nil
+}
+
+func (r *DefaultUserRepository) Find(ctx context.Context, usr *domain.User) (*domain.User, error) {
+	l := r.logger.Sugar().With("Create")
+	start := time.Now()
+	if usr == nil {
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "user is nil")
+		return nil, ErrInvalidArgument
+	}
+
+	filled := false
+	match := bson.A{}
+	if usr.Email != "" {
+		filled = true
+		match = append(match, bson.M{"email": usr.Email})
+	}
+	if usr.UserName != "" {
+		filled = true
+		match = append(match, bson.M{"username": usr.UserName})
+	}
+	if usr.ID != "" {
+		// try find user by id or nickname
+		match = append(match, bson.M{"id": usr.ID})
+	}
+	if !filled && usr.ID != "" {
+		filled = true
+		match = append(match, bson.M{"id": usr.ID})
+	}
+
+	if !filled {
+		l.Error(zap.Error(ErrCannotFind), zap.Duration("duration", time.Since(start)), "incorrect data to search user")
+		return nil, ErrCannotFind
+	}
+
+	u := &dto.UserDTO{}
+	err := r.col.FindOne(ctx, bson.M{"$or": match}).Decode(u)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "users record not found in database")
+			return nil, ErrNotFound
+		}
+		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "find error")
+		return nil, ErrInternal
+	}
+
+	userMapper := mapper.UserMapper{}
+	return userMapper.ToModel(u), nil
 }
