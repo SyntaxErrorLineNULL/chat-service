@@ -6,12 +6,20 @@ import (
 	"time"
 
 	"github.com/SyntaxErrorLineNULL/chat-service/domain"
-	"github.com/SyntaxErrorLineNULL/chat-service/repository"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 )
+
+// ErrEmpty returns when request was with empty data
+var ErrEmpty = errors.New("empty")
+
+// ErrNotFound returns when record doesn't exist in database
+var ErrNotFound = errors.New("not found")
+
+// ErrInternal returns when something went wrong in repository
+var ErrInternal = errors.New("internal error")
 
 type DefaultChatsUsersRepository struct {
 	client *mongo.Client
@@ -32,8 +40,8 @@ func (r *DefaultChatsUsersRepository) Create(ctx context.Context, chu *domain.Ch
 	l := r.logger.Sugar().With("Create")
 	start := time.Now()
 	if chu.ID == "" {
-		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
-		return repository.ErrEmpty
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
+		return ErrEmpty
 	}
 
 	_, err := r.col.InsertOne(ctx, chu)
@@ -50,8 +58,8 @@ func (r *DefaultChatsUsersRepository) Find(ctx context.Context, chatID, uid stri
 	l := r.logger.Sugar().With("Find")
 	start := time.Now()
 	if chatID == "" {
-		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
-		return nil, repository.ErrEmpty
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
+		return nil, ErrEmpty
 	}
 
 	ch := &domain.ChatsUsers{}
@@ -60,7 +68,7 @@ func (r *DefaultChatsUsersRepository) Find(ctx context.Context, chatID, uid stri
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "chats users record not found in database")
-			return nil, repository.ErrNotFound
+			return nil, ErrNotFound
 		}
 		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "find error")
 		return nil, err
@@ -74,8 +82,8 @@ func (r *DefaultChatsUsersRepository) Update(ctx context.Context, chu *domain.Ch
 	l := r.logger.Sugar().With("Update")
 	start := time.Now()
 	if chu.ID == "" {
-		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
-		return repository.ErrEmpty
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
+		return ErrEmpty
 	}
 
 	update := bson.M{
@@ -89,11 +97,11 @@ func (r *DefaultChatsUsersRepository) Update(ctx context.Context, chu *domain.Ch
 	_, err := r.col.UpdateOne(ctx, bson.M{"chat_id": chu.ChatID}, update, options.Update().SetUpsert(true))
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "chats users record not found in database")
-			return repository.ErrNotFound
+			l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "chats users record not found in database")
+			return ErrNotFound
 		}
-		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "update error")
-		return repository.ErrInternal
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "update error")
+		return ErrInternal
 	}
 
 	return nil
@@ -104,19 +112,19 @@ func (r *DefaultChatsUsersRepository) Delete(ctx context.Context, chatID, uid st
 	l := r.logger.Sugar().With("Update")
 	start := time.Now()
 	if chatID == "" || uid == "" {
-		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
-		return repository.ErrEmpty
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "empty request")
+		return ErrEmpty
 	}
 
 	filter := bson.D{{Key: "chat_id", Value: chatID}, {Key: "user_id", Value: uid}}
 	_, err := r.col.DeleteOne(ctx, filter)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "chat user record not found in database")
-			return repository.ErrNotFound
+			l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "chat user record not found in database")
+			return ErrNotFound
 		}
-		l.Error(zap.Error(repository.ErrEmpty), zap.Duration("duration", time.Since(start)), "error delete chat user")
-		return repository.ErrInternal
+		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "error delete chat user")
+		return ErrInternal
 	}
 
 	return nil
