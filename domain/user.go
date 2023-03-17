@@ -1,5 +1,7 @@
 package domain
 
+import netmail "net/mail"
+
 type User struct {
 	// User identifier
 	ID string `json:"id" bson:"id"`
@@ -11,4 +13,9 @@ type User struct {
 	UserName string `json:"username" bson:"username"`
 	// User email
 	Email string `json:"email" bson:"email"`
+}
+
+func (u User) validEmail(email string) bool {
+	_, err := netmail.ParseAddress(email)
+	return err == nil
 }
