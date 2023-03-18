@@ -91,12 +91,13 @@ func TestUserRepository_Create(t *testing.T) {
 			assert.Equal(t, newUser, &res)
 		})
 
-		t.Run("should return error when user is nil", func(t *testing.T) {
+		t.Run("should return error when create user is nil", func(t *testing.T) {
 			var nilUser *domain.User
 			err := r.Create(ctx, nilUser)
 			assert.EqualError(t, err, user.ErrInvalidArgument.Error())
 		})
 
+		// Find user record
 		expect := findTestUser(ctx, col)
 		t.Run("should find an existing user by email", func(t *testing.T) {
 			res, err := r.Find(ctx, &domain.User{Email: "cyb_orange190@gmail.com"})
@@ -113,7 +114,6 @@ func TestUserRepository_Create(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, expect, res)
 		})
-
 		// Check error
 		t.Run("should find an existing user by username", func(t *testing.T) {
 			_, err := r.Find(ctx, &domain.User{UserName: "", ID: ""})
@@ -122,6 +122,16 @@ func TestUserRepository_Create(t *testing.T) {
 		t.Run("should find an existing user by username", func(t *testing.T) {
 			_, err := r.Find(ctx, &domain.User{UserName: "1"})
 			assert.EqualError(t, err, user.ErrNotFound.Error())
+		})
+
+		t.Run("update user record", func(t *testing.T) {
+			errUpdate := r.Update(ctx, &domain.User{ID: expect.ID, UserName: "Chat Service"})
+			assert.NoError(t, errUpdate)
+			var res domain.User
+			errFind := col.FindOne(ctx, bson.M{"id": expect.ID}).Decode(&res)
+			assert.NoError(t, errFind)
+			expect.UserName = "Chat Service"
+			assert.Equal(t, &domain.User{ID: "7d05392e-1675-43df-a3e6-bd3a834dd729", FirstName: "", LastName: "", UserName: "Chat Service", Email: ""}, &res)
 		})
 	})
 
