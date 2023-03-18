@@ -3,6 +3,8 @@ package user
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/SyntaxErrorLineNULL/chat-service/domain"
 	"github.com/SyntaxErrorLineNULL/chat-service/repository/dto"
 	"github.com/SyntaxErrorLineNULL/chat-service/repository/mapper"
@@ -11,7 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
-	"time"
 )
 
 // ErrEmpty returns when request was with empty data
@@ -52,7 +53,9 @@ func (r *DefaultUserRepository) Create(ctx context.Context, usr *domain.User) er
 	}
 
 	// generate user id
-	usr.ID = uuid.New().String()
+	if usr.ID == "" {
+		usr.ID = uuid.New().String()
+	}
 	u := &mapper.UserMapper{}
 	_, err := r.col.InsertOne(ctx, u.ToDTO(usr))
 	if err != nil {
