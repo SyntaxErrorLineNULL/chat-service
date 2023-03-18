@@ -69,6 +69,7 @@ func TestUserRepository_Create(t *testing.T) {
 	}
 
 	r := user.NewDefaultUserRepository(client, zap.NewNop())
+	col := client.Database("chat-service").Collection("user")
 	t.Run("user repository", func(t *testing.T) {
 		t.Run("should create a new user", func(t *testing.T) {
 			// Arrange
@@ -85,7 +86,6 @@ func TestUserRepository_Create(t *testing.T) {
 
 			// check exist record in database
 			var res domain.User
-			col := client.Database("chat-service").Collection("user")
 			errFind := col.FindOne(ctx, bson.M{"id": id}).Decode(&res)
 			assert.NoError(t, errFind)
 			assert.Equal(t, newUser, &res)
@@ -96,6 +96,35 @@ func TestUserRepository_Create(t *testing.T) {
 			err := r.Create(ctx, nilUser)
 			assert.EqualError(t, err, user.ErrInvalidArgument.Error())
 		})
+
+		expect := findTestUser(ctx, col)
+		t.Run("should find an existing user by email", func(t *testing.T) {
+			res, err := r.Find(ctx, &domain.User{Email: "cyb_orange190@gmail.com"})
+			assert.NoError(t, err)
+			assert.Equal(t, expect, res)
+		})
+		t.Run("should find an existing user by id", func(t *testing.T) {
+			res, err := r.Find(ctx, &domain.User{ID: "7d05392e-1675-43df-a3e6-bd3a834dd729"})
+			assert.NoError(t, err)
+			assert.Equal(t, expect, res)
+		})
 	})
 
+}
+
+func findTestUser(ctx context.Context, col *mongo.Collection) *domain.User {
+	expect := &domain.User{
+		ID:        "7d05392e-1675-43df-a3e6-bd3a834dd729",
+		Email:     "cyb_orange190@gmail.com",
+		UserName:  "test_user",
+		FirstName: "Test",
+		LastName:  "User",
+	}
+
+	_, errInsert := col.InsertOne(ctx, expect)
+	if errInsert != nil {
+		panic(1)
+	}
+
+	return expect
 }
