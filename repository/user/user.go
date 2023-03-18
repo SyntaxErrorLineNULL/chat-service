@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"time"
 )
@@ -46,7 +47,7 @@ func (r *DefaultUserRepository) Create(ctx context.Context, usr *domain.User) er
 	l := r.logger.Sugar().With("Create")
 	start := time.Now()
 	if usr == nil {
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "user is nil")
+		l.Error(zap.Error(ErrInvalidArgument), zap.Duration("duration", time.Since(start)), "user is nil")
 		return ErrInvalidArgument
 	}
 
@@ -67,7 +68,7 @@ func (r *DefaultUserRepository) Find(ctx context.Context, usr *domain.User) (*do
 	l := r.logger.Sugar().With("Find")
 	start := time.Now()
 	if usr == nil {
-		l.Error(zap.Error(ErrEmpty), zap.Duration("duration", time.Since(start)), "user is nil")
+		l.Error(zap.Error(ErrInvalidArgument), zap.Duration("duration", time.Since(start)), "user is nil")
 		return nil, ErrInvalidArgument
 	}
 
@@ -80,10 +81,6 @@ func (r *DefaultUserRepository) Find(ctx context.Context, usr *domain.User) (*do
 	if usr.UserName != "" {
 		filled = true
 		match = append(match, bson.M{"username": usr.UserName})
-	}
-	if usr.ID != "" {
-		// try find user by id or nickname
-		match = append(match, bson.M{"id": usr.ID})
 	}
 	if !filled && usr.ID != "" {
 		filled = true
@@ -111,7 +108,34 @@ func (r *DefaultUserRepository) Find(ctx context.Context, usr *domain.User) (*do
 	return userMapper.ToModel(u), nil
 }
 
+// Update user document
 func (r *DefaultUserRepository) Update(ctx context.Context, usr *domain.User) error {
+	l := r.logger.Sugar().With("Update")
+	start := time.Now()
+	if usr == nil {
+		l.Error(zap.Error(ErrInvalidArgument), zap.Duration("duration", time.Since(start)), "user is nil")
+		return ErrInvalidArgument
+	}
+
+	u := &mapper.UserMapper{}
+	data := u.ToDTO(usr)
+	_, err := r.col.UpdateOne(
+		ctx,
+		bson.M{"id": data.ID},
+		bson.M{"$set": data},
+		options.Update().SetUpsert(true),
+	)
+
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "users record not found in database")
+			return ErrNotFound
+		}
+		l.Error(zap.Error(err), zap.Duration("duration", time.Since(start)), "update user data error")
+		return ErrInternal
+	}
+
+	l.Info(zap.Duration("duration", time.Since(start)), "successful update user data")
 	return nil
 }
 
