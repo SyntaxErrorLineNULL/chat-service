@@ -77,7 +77,7 @@ func TestUserRepository_Create(t *testing.T) {
 			newUser := &domain.User{
 				ID:        id,
 				Email:     "test@example.com",
-				UserName:  "test_user",
+				UserName:  "test_user1",
 				FirstName: "Test",
 				LastName:  "User",
 			}
@@ -107,6 +107,21 @@ func TestUserRepository_Create(t *testing.T) {
 			res, err := r.Find(ctx, &domain.User{ID: "7d05392e-1675-43df-a3e6-bd3a834dd729"})
 			assert.NoError(t, err)
 			assert.Equal(t, expect, res)
+		})
+		t.Run("should find an existing user by username", func(t *testing.T) {
+			res, err := r.Find(ctx, &domain.User{UserName: "test_user"})
+			assert.NoError(t, err)
+			assert.Equal(t, expect, res)
+		})
+
+		// Check error
+		t.Run("should find an existing user by username", func(t *testing.T) {
+			_, err := r.Find(ctx, &domain.User{UserName: "", ID: ""})
+			assert.EqualError(t, err, user.ErrCannotFind.Error())
+		})
+		t.Run("should find an existing user by username", func(t *testing.T) {
+			_, err := r.Find(ctx, &domain.User{UserName: "1"})
+			assert.EqualError(t, err, user.ErrNotFound.Error())
 		})
 	})
 
