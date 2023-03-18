@@ -103,14 +103,40 @@ func (srv *Service) Find(ctx context.Context, input *domain.User) (*domain.User,
 	u, err := srv.db.User.Find(ctx, input)
 	// Check if the user was not found
 	if errors.Is(err, user.ErrNotFound) || errors.Is(err, user.ErrCannotFind) {
-		l.Error(zap.Error(ErrEmpty), "user not found")
+		l.Error(zap.Error(ErrUserNotFound), "user not found")
 		return input, ErrUserNotFound
 	}
 	// Check if there was an error while finding the user
 	if err != nil {
-		l.Error(zap.Error(ErrEmpty), "failed find user")
+		l.Error(zap.Error(err), "failed find user")
 		return input, err
 	}
 
+	l.Info("successful find user record")
 	return u, err
+}
+
+// Update updates an existing user record in the database.
+// It takes a context and a user domain object as input,
+// and returns an error if any operation fails.
+func (srv *Service) Update(ctx context.Context, input *domain.User) error {
+	l := srv.logger.Sugar().With("Update")
+	l.Debug("update user record")
+
+	// Check if user data is empty
+	if input == nil {
+		l.Error(zap.Error(ErrEmpty), "empty user data")
+		return ErrEmpty
+	}
+
+	// Call the Update method of the User repository to update the user record
+	err := srv.db.User.Update(ctx, input)
+	if err != nil {
+		l.Error(zap.Error(err), "failed update user")
+		return err
+	}
+
+	// Log success and return nil
+	l.Info("successfully update user data")
+	return nil
 }
