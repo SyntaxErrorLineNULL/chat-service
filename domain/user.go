@@ -15,7 +15,7 @@ type User struct {
 	Email string `json:"email" bson:"email"`
 }
 
-func (u User) validEmail(email string) bool {
-	_, err := netmail.ParseAddress(email)
+func (u User) ValidEmail() bool {
+	_, err := netmail.ParseAddress(u.Email)
 	return err == nil
 }
