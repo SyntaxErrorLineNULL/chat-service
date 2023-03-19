@@ -1,15 +1,15 @@
 package repository
 
 import (
-	"github.com/SyntaxErrorLineNULL/chat-service/repository/user"
 	"github.com/SyntaxErrorLineNULL/chat-service/repository/chat"
+	"github.com/SyntaxErrorLineNULL/chat-service/repository/user"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 )
 
 type Repository struct {
 	User user.UserRepository
-	Chat chat.IChatRepository
+	Chat chat.ChatRepository
 }
 
 func New(client *mongo.Client, logger *zap.Logger) *Repository {

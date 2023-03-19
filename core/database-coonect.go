@@ -10,7 +10,7 @@ import (
 )
 
 func DatabaseConnect(ctx context.Context, cfg *config.Config, logger zap.Logger) (*mongo.Client, error) {
-	log := logger.With().With(zap.Field{
+	log := logger.With(zap.Field{
 		Key:    "core",
 		String: "DatabaseConnect",
 	})

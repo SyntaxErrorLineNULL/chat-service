@@ -9,7 +9,7 @@ import (
 )
 
 func RedisConnect(ctx context.Context, cfg *config.Config, logger zap.Logger) error {
-	log := logger.With().With(zap.Field{
+	log := logger.With(zap.Field{
 		Key:    "core",
 		String: "RedisConnect",
 	})

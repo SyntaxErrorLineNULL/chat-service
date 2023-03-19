@@ -5,7 +5,8 @@ import (
 	"errors"
 	"github.com/SyntaxErrorLineNULL/chat-service/domain"
 	"github.com/SyntaxErrorLineNULL/chat-service/repository"
-	gonanoid "github.com/matoous/go-nanoid/v2"
+	cht "github.com/SyntaxErrorLineNULL/chat-service/repository/chat"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -32,8 +33,7 @@ func (srv *Service) Create(ctx context.Context, input *domain.Chat) error {
 		return ErrEmpty
 	}
 
-	id, _ := gonanoid.New(20)
-	input.ID = id
+	input.ID = uuid.New().String()
 
 	err := srv.db.Chat.Create(ctx, input)
 	if err != nil {
@@ -60,7 +60,7 @@ func (srv *Service) CreatePersonalChatWithUser(ctx context.Context, ch *domain.C
 	var chat *domain.Chat
 	chat, err = srv.db.Chat.FindPersonalChatBetweenUsers(ctx, "", "")
 	if err != nil {
-		if !errors.Is(err, repository.ErrNotFound) {
+		if !errors.Is(err, cht.ErrNotFound) {
 			return nil, err
 		}
 	} else {
