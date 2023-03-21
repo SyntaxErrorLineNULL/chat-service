@@ -41,8 +41,7 @@ type Service struct {
 
 // New returns new instance of User service
 func New(settings *Settings) *Service {
-	l := settings.Logger
-	l.Sugar().With("New user service")
+	l := settings.Logger.With(zap.Namespace("user service instance"))
 	return &Service{
 		db:     settings.DB,
 		logger: l,
